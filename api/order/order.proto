@@ -1,0 +1,97 @@
+syntax = "proto3";
+
+package order;
+
+//import "cart.proto"; // 需要商品服务定义的商品类型
+
+option go_package = "order";
+
+message Address {
+  string street_address = 1;
+  string city = 2;
+  string state = 3;
+  string country = 4;
+  int32 zip_code = 5;
+}
+
+message OrderItem {
+  //  cart.CartItem item = 1;
+  float cost = 2;
+}
+
+message Page {
+  int32   limit = 1;
+  string  order_by = 2;
+  bool    desc = 3;
+  int64   lastValue = 4;
+}
+
+message Order {
+  repeated OrderItem order_items = 1;
+  string order_id = 2;
+  uint32 user_id = 3;
+  string user_currency = 4;
+  Address address = 5;
+  string email = 6;
+  int32 created_at = 7;
+}
+
+service OrderService {
+  rpc PlaceOrder(PlaceOrderReq) returns (PlaceOrderResp) {}                       // 仅供 购物车服务 调用，创建新订单，预下单+支付
+  rpc ListOrder(ListOrderReq) returns (ListOrderResp) {}                          // 可选状态 查询订单列表
+  rpc ChangeOrderStatus(ChangeOrderStatusReq) returns (ChangeOrderStatusResp) {}  // 接收 支付服务 更新状态回调
+
+  // todo 修改订单
+  // todo 定时取消订单
+
+  rpc LockItems(LockItemsReq) returns (LockItemsResp) {}                          // 请求 商品服务 锁定商品
+}
+
+message LockItemsReq {
+  uint32 user_id = 1;
+  repeated OrderItem order_items = 2;
+}
+
+message LockItemsResp {
+  bool is_locked = 1;
+  string reason = 2;
+}
+
+message PlaceOrderReq {
+  uint32 user_id = 1;                   // 用户id
+  string user_currency = 2;             // 默认为 RMB
+  Address address = 3;                  // 收货地址
+  repeated OrderItem order_items = 4;   // 订单商品列表
+}
+
+message PlaceOrderResp {
+  string order_id = 1;    // 订单id
+  int32 order_status = 2; // 订单状态
+  string extra = 3;
+}
+
+message ListOrderReq {
+  uint32 user_id = 1;     // 用户id
+  int32 order_status = 2; // 订单状态，0 默认全查，100 为 支付中，200 为 已支付，300 为 已取消
+
+  Page page = 3;
+}
+
+message ListOrderResp {
+  repeated Order orders = 1;
+  Page page = 2;
+}
+
+message ChangeOrderStatusReq {
+  uint32 user_id = 1;
+  string order_id = 2;
+  int32 order_status = 3;
+  string payment_method = 4;
+  string payment_id = 5;
+}
+
+message ChangeOrderStatusResp {
+  string isSuccess = 1;
+  int32 order_status = 2;
+  string extra = 3;
+}
